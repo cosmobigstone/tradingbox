@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingBox — AI 멀티에셋 자동매매 플랫폼</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────
+   TOSS-STYLE DESIGN TOKENS
+───────────────────────────────────────────────────── */
+:root {
+  /* 토스 컬러 팔레트 */
+  --blue-50:  #E8F3FF;
+  --blue-100: #C9E2FF;
+  --blue-200: #90C2FF;
+  --blue-500: #3182F6;  /* 토스 블루 주조색 */
+  --blue-600: #1B64DA;
+  --blue-700: #0047B3;
+
+  --gray-50:  #F9FAFB;
+  --gray-100: #F2F4F6;
+  --gray-200: #E5E8EB;
+  --gray-300: #D1D6DB;
+  --gray-400: #B0B8C1;
+  --gray-500: #6B7684;
+  --gray-600: #4E5968;
+  --gray-700: #333D4B;
+  --gray-800: #191F28;
+
+  --red-50:   #FFF0F0;
+  --red-500:  #F04452;
+
+  --green-50: #E8FBF5;
+  --green-500:#00C471;
+
+  --orange-50: #FFF4E6;
+  --orange-500:#FF8C00;
+
+  --purple-50: #F2EDFF;
+  --purple-500:#6B4EFF;
+
+  /* 배경 */
+  --bg-base:    #FFFFFF;
+  --bg-surface: #F9FAFB;
+  --bg-raised:  #F2F4F6;
+
+  /* 텍스트 */
+  --text-primary:   #191F28;
+  --text-secondary: #333D4B;
+  --text-tertiary:  #6B7684;
+  --text-quaternary:#B0B8C1;
+
+  /* 보더 */
+  --border-default: #E5E8EB;
+  --border-subtle:  #F2F4F6;
+
+  /* 그림자 */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:  0 8px 24px rgba(0,0,0,0.10);
+  --shadow-xl:  0 16px 48px rgba(0,0,0,0.12);
+
+  /* 폰트 */
+  --font: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+
+  /* 반경 */
+  --r-xs:  8px;
+  --r-sm:  12px;
+  --r-md:  16px;
+  --r-lg:  24px;
+  --r-xl:  32px;
+  --r-full: 9999px;
+}
+
+/* ─────────────────────────────────────────────────────
+   RESET
+───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--font);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--blue-500); text-decoration: none; }
+a:hover { color: var(--blue-600); }
+button { font-family: var(--font); cursor: pointer; }
+
+/* ─────────────────────────────────────────────────────
+   TICKER (토스 스타일: 흰 배경 + 파란 테두리 라인)
+───────────────────────────────────────────────────── */
+.ticker-wrap {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 36px;
+  background: var(--bg-base);
+  border-bottom: 1.5px solid var(--border-default);
+  z-index: 1000;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.ticker-inner {
+  display: flex;
+  white-space: nowrap;
+  animation: ticker-scroll 42s linear infinite;
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border-right: 1px solid var(--border-subtle);
+}
+.ticker-item .sym   { color: var(--text-tertiary); font-weight: 600; }
+.ticker-item .price { color: var(--text-primary);  font-weight: 700; font-variant-numeric: tabular-nums; }
+.ticker-item .up    { color: var(--red-500);  font-weight: 600; }
+.ticker-item .dn    { color: var(--blue-500); font-weight: 600; }
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ─────────────────────────────────────────────────────
+   NAVBAR — 토스 스타일
+───────────────────────────────────────────────────── */
+.nav-bar {
+  position: fixed;
+  top: 36px; left: 0; right: 0;
+  height: 56px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-default);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  max-width: 100%;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  background: var(--blue-500);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark svg { width: 18px; height: 18px; }
+.logo-text {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+.logo-text span { color: var(--blue-500); }
+
+.nav-tabs {
+  display: flex;
+  gap: 2px;
+  list-style: none;
+}
+.nav-tabs a {
+  display: block;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  border-radius: var(--r-full);
+  transition: all 0.15s;
+}
+.nav-tabs a:hover { background: var(--gray-100); color: var(--text-primary); }
+.nav-tabs a.active { background: var(--blue-50); color: var(--blue-500); font-weight: 700; }
+
+.nav-cta { display: flex; gap: 8px; align-items: center; }
+
+/* ─────────────────────────────────────────────────────
+   BUTTONS — 토스 스타일
+───────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--r-full);
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-sm  { padding: 7px 14px; font-size: 13px; }
+.btn-lg  { padding: 14px 28px; font-size: 16px; border-radius: var(--r-xl); }
+.btn-xl  { padding: 18px 40px; font-size: 18px; border-radius: var(--r-xl); }
+
+.btn-primary {
+  background: var(--blue-500);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--blue-600); transform: translateY(-1px); }
+
+.btn-secondary {
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+.btn-secondary:hover { background: var(--blue-100); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-default);
+}
+.btn-outline:hover { border-color: var(--gray-400); background: var(--gray-50); }
+
+.btn-ghost {
+  background: var(--gray-100);
+  color: var(--text-secondary);
+}
+.btn-ghost:hover { background: var(--gray-200); }
+
+/* ─────────────────────────────────────────────────────
+   LAYOUT
+───────────────────────────────────────────────────── */
+.page-wrapper { margin-top: 92px; }
+.page-section { display: none; }
+.page-section.active { display: block; }
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section {
+  padding: 80px 0;
+}
+.section-sm { padding: 48px 0; }
+.section-lg { padding: 120px 0; }
+
+.section-bg-gray { background: var(--bg-surface); }
+.section-bg-raised { background: var(--bg-raised); }
+.section-bg-blue { background: var(--blue-50); }
+
+/* ─────────────────────────────────────────────────────
+   TYPOGRAPHY SYSTEM
+───────────────────────────────────────────────────── */
+.label-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-500);
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+}
+.label-tag::before {
+  content: '';
+  display: block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--blue-500);
+}
+
+.heading-xl {
+  font-size: clamp(36px, 4.5vw, 56px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+}
+.heading-lg {
+  font-size: clamp(28px, 3.5vw, 42px);
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+.heading-md {
+  font-size: clamp(22px, 2.5vw, 30px);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+}
+.heading-sm {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.body-lg { font-size: 18px; line-height: 1.75; color: var(--text-secondary); font-weight: 400; }
+.body-md { font-size: 16px; line-height: 1.7;  color: var(--text-secondary); }
+.body-sm { font-size: 14px; line-height: 1.65; color: var(--text-tertiary); }
+
+.text-blue    { color: var(--blue-500); }
+.text-green   { color: var(--green-500); }
+.text-red     { color: var(--red-500); }
+.text-orange  { color: var(--orange-500); }
+.text-purple  { color: var(--purple-500); }
+.text-gray    { color: var(--text-tertiary); }
+
+/* ─────────────────────────────────────────────────────
+   CARDS — 토스 스타일
+───────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+.card-flat {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+.card-blue {
+  background: var(--blue-50);
+  border: 1.5px solid var(--blue-100);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+.card-gray {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+
+/* ─────────────────────────────────────────────────────
+   BADGE / CHIP — 토스 스타일
+───────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  font-size: 12px;
+  font-weight: 700;
+}
+.chip-blue   { background: var(--blue-50);   color: var(--blue-600); }
+.chip-green  { background: var(--green-50);  color: var(--green-500); }
+.chip-red    { background: var(--red-50);    color: var(--red-500); }
+.chip-orange { background: var(--orange-50); color: var(--orange-500); }
+.chip-purple { background: var(--purple-50); color: var(--purple-500); }
+.chip-gray   { background: var(--gray-100);  color: var(--gray-600); }
+
+/* ─────────────────────────────────────────────────────
+   GRID LAYOUTS
+───────────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-center  { display: flex; justify-content: center; align-items: center; }
+.flex-col     { display: flex; flex-direction: column; }
+.gap-8  { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.gap-32 { gap: 32px; }
+.gap-48 { gap: 48px; }
+
+/* ─────────────────────────────────────────────────────
+   SPACING
+───────────────────────────────────────────────────── */
+.mt-4  {margin-top:4px}  .mt-8  {margin-top:8px}  .mt-12 {margin-top:12px}
+.mt-16 {margin-top:16px} .mt-20 {margin-top:20px} .mt-24 {margin-top:24px}
+.mt-32 {margin-top:32px} .mt-40 {margin-top:40px} .mt-48 {margin-top:48px}
+.mb-8  {margin-bottom:8px}  .mb-12 {margin-bottom:12px}
+.mb-16 {margin-bottom:16px} .mb-24 {margin-bottom:24px}
+.mb-32 {margin-bottom:32px} .mb-48 {margin-bottom:48px}
+
+/* ─────────────────────────────────────────────────────
+   DIVIDER
+───────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 48px 0;
+}
+
+/* ─────────────────────────────────────────────────────
+   HIGHLIGHT BOX — 토스 스타일 인포 박스
+───────────────────────────────────────────────────── */
+.info-box {
+  background: var(--blue-50);
+  border-radius: var(--r-md);
+  border-left: 4px solid var(--blue-500);
+  padding: 16px 20px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+.info-box.green  { background: var(--green-50);  border-left-color: var(--green-500); }
+.info-box.orange { background: var(--orange-50); border-left-color: var(--orange-500); }
+.info-box.red    { background: var(--red-50);    border-left-color: var(--red-500); }
+.info-box.purple { background: var(--purple-50); border-left-color: var(--purple-500); }
+
+/* ─────────────────────────────────────────────────────
+   NUMBER STATS — 토스 대형 지표 표시
+───────────────────────────────────────────────────── */
+.stat-num {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.stat-num.blue   { color: var(--blue-500); }
+.stat-num.green  { color: var(--green-500); }
+.stat-num.red    { color: var(--red-500); }
+.stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
+/* ─────────────────────────────────────────────────────
+   TABLE — 토스 스타일
+───────────────────────────────────────────────────── */
+.toss-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.toss-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1.5px solid var(--border-default);
+  background: var(--bg-surface);
+}
+.toss-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.toss-table tr:last-child td { border-bottom: none; }
+.toss-table tr:hover td { background: var(--gray-50); }
+.td-bold   { font-weight: 700; color: var(--text-primary) !important; }
+.td-blue   { color: var(--blue-500) !important; font-weight: 700; }
+.td-green  { color: var(--green-500) !important; font-weight: 700; }
+.td-red    { color: var(--red-500) !important; font-weight: 700; }
+.td-orange { color: var(--orange-500) !important; font-weight: 700; }
+.table-wrap {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────
+   TIMELINE — 토스 스타일
+───────────────────────────────────────────────────── */
+.timeline {
+  position: relative;
+  padding-left: 28px;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px; top: 4px; bottom: 4px;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--blue-500) 60%, var(--border-default));
+}
+.tl-item {
+  position: relative;
+  padding-bottom: 28px;
+}
+.tl-item:last-child { padding-bottom: 0; }
+.tl-dot {
+  position: absolute;
+  left: -24px; top: 4px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--bg-base);
+  border: 2.5px solid var(--blue-500);
+}
+.tl-dot.done { background: var(--blue-500); border-color: var(--blue-500); }
+.tl-dot.current {
+  background: var(--blue-500);
+  box-shadow: 0 0 0 4px var(--blue-50);
+}
+.tl-dot.future { border-color: var(--border-default); }
+.tl-date {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue-500);
+  margin-bottom: 3px;
+  letter-spacing: 0.02em;
+}
+.tl-date.gray { color: var(--text-tertiary); }
+.tl-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+.tl-desc { font-size: 13px; color: var(--text-tertiary); line-height: 1.55; }
+
+/* ─────────────────────────────────────────────────────
+   PERSON CARD — 토스 스타일
+───────────────────────────────────────────────────── */
+.person-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  padding: 28px;
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.avatar {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.avatar-blue   { background: var(--blue-50);   color: var(--blue-500); }
+.avatar-orange { background: var(--orange-50); color: var(--orange-500); }
+.person-name   { font-size: 17px; font-weight: 800; color: var(--text-primary); margin-bottom: 3px; }
+.person-role   { font-size: 12px; font-weight: 700; color: var(--blue-500); margin-bottom: 8px; }
+.person-desc   { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; }
+.person-contact{ font-size: 12px; color: var(--text-tertiary); margin-top: 10px; line-height: 1.7; }
+
+/* ─────────────────────────────────────────────────────
+   STEP — 토스 프로세스 스텝
+───────────────────────────────────────────────────── */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 16px;
+  position: relative;
+}
+.step-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  padding: 28px 22px;
+  text-align: center;
+  transition: box-shadow 0.2s;
+}
+.step-card:hover { box-shadow: var(--shadow-md); }
+.step-num-wrap {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--blue-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--blue-500);
+}
+.step-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.step-desc  { font-size: 13px; color: var(--text-tertiary); line-height: 1.55; }
+
+/* ─────────────────────────────────────────────────────
+   FAQ ACCORDION — 토스 스타일
+───────────────────────────────────────────────────── */
+.faq-list { display: flex; flex-direction: column; gap: 8px; }
+.faq-item {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.faq-q {
+  padding: 18px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+}
+.faq-q:hover { background: var(--gray-50); }
+.faq-arrow {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s, background 0.15s;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.faq-item.open .faq-arrow { transform: rotate(180deg); background: var(--blue-50); color: var(--blue-500); }
+.faq-a {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.2s;
+  padding: 0 20px;
+}
+.faq-item.open .faq-a { max-height: 200px; padding: 0 20px 18px; }
+
+/* ─────────────────────────────────────────────────────
+   KPI CARD — 토스 스타일
+───────────────────────────────────────────────────── */
+.kpi-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  padding: 22px 20px;
+  text-align: center;
+}
+.kpi-val   { font-size: 28px; font-weight: 800; letter-spacing: -0.04em; color: var(--text-primary); margin-bottom: 4px; }
+.kpi-label { font-size: 12px; font-weight: 600; color: var(--text-tertiary); }
+.kpi-sub   { font-size: 11px; color: var(--text-quaternary); margin-top: 3px; }
+
+/* ─────────────────────────────────────────────────────
+   AGENDA — 내부 회의용
+───────────────────────────────────────────────────── */
+.agenda-item {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  padding: 20px 24px;
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.agenda-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gray-200);
+  min-width: 32px;
+  line-height: 1;
+  padding-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.agenda-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
+.agenda-desc  { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; }
+.agenda-owner { font-size: 12px; font-weight: 600; color: var(--blue-500); margin-top: 6px; }
+
+/* ─────────────────────────────────────────────────────
+   TIER CARDS — 요금제
+───────────────────────────────────────────────────── */
+.tier-card {
+  background: var(--bg-base);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--r-xl);
+  padding: 32px 26px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.tier-card:hover { box-shadow: var(--shadow-xl); transform: translateY(-3px); }
+.tier-card.featured {
+  border-color: var(--blue-500);
+  background: var(--bg-base);
+}
+.featured-badge {
+  position: absolute;
+  top: 18px; right: 18px;
+  background: var(--blue-500);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+}
+.tier-plan   { font-size: 12px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+.tier-price  { font-size: 34px; font-weight: 800; letter-spacing: -0.05em; color: var(--text-primary); }
+.tier-price .unit { font-size: 15px; font-weight: 500; color: var(--text-tertiary); }
+.tier-period { font-size: 13px; color: var(--text-tertiary); margin-bottom: 24px; margin-top: 2px; }
+.tier-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.tier-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.tier-check {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--green-50);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0px;
+}
+.tier-check svg { width: 10px; height: 10px; }
+
+/* ─────────────────────────────────────────────────────
+   LIVE DOT
+───────────────────────────────────────────────────── */
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green-500);
+  display: inline-block;
+  animation: live-pulse 2s ease-in-out infinite;
+  vertical-align: middle;
+}
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,196,113,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(0,196,113,0); }
+}
+
+/* ─────────────────────────────────────────────────────
+   COMPLIANCE ITEM
+───────────────────────────────────────────────────── */
+.ci-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  background: var(--bg-surface);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-subtle);
+}
+.ci-icon-wrap {
+  width: 38px; height: 38px;
+  border-radius: var(--r-xs);
+  background: var(--blue-50);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.ci-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+.ci-desc  { font-size: 12px; color: var(--text-tertiary); line-height: 1.5; }
+
+/* ─────────────────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────────────────── */
+.footer {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-default);
+  padding: 56px 0 32px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr;
+  gap: 48px;
+}
+.footer-brand .name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.footer-brand .name span { color: var(--blue-500); }
+.footer-brand .desc {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.7;
+  max-width: 300px;
+}
+.footer-col-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.footer-links li a {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  transition: color 0.15s;
+}
+.footer-links li a:hover { color: var(--blue-500); }
+.footer-contact-detail {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 2;
+}
+.footer-bottom {
+  border-top: 1px solid var(--border-default);
+  padding-top: 24px;
+  margin-top: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-quaternary);
+}
+
+/* ─────────────────────────────────────────────────────
+   HERO SPECIFIC
+───────────────────────────────────────────────────── */
+.hero {
+  padding: 80px 0 96px;
+  overflow: hidden;
+  position: relative;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--blue-50);
+  color: var(--blue-500);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  margin-bottom: 20px;
+}
+.hero-stats-row {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--r-xl);
+  background: var(--bg-base);
+  overflow: hidden;
+  width: fit-content;
+  box-shadow: var(--shadow-md);
+}
+.hero-stat-item {
+  padding: 20px 28px;
+  border-right: 1px solid var(--border-default);
+  text-align: center;
+  min-width: 120px;
+}
+.hero-stat-item:last-child { border-right: none; }
+.hero-stat-val {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  display: block;
+}
+.hero-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-top: 3px;
+  display: block;
+}
+
+/* 차트 일러스트 SVG */
+.hero-illustration {
+  position: absolute;
+  right: -40px; top: 50%;
+  transform: translateY(-50%);
+  width: 480px;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────
+   INTERNAL DOC HEADER
+───────────────────────────────────────────────────── */
+.doc-header {
+  background: var(--orange-50);
+  border: 1.5px solid #FFD8A8;
+  border-radius: var(--r-md);
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+.doc-header-left { font-size: 14px; font-weight: 700; color: var(--orange-500); }
+.doc-header-right { font-size: 12px; color: var(--text-tertiary); }
+
+/* ─────────────────────────────────────────────────────
+   PARTNER GRID
+───────────────────────────────────────────────────── */
+.partner-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 16px;
+}
+.partner-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  padding: 24px;
+  transition: box-shadow 0.2s;
+}
+.partner-card:hover { box-shadow: var(--shadow-md); }
+.partner-num   { font-size: 11px; font-weight: 700; color: var(--blue-500); letter-spacing: 0.06em; margin-bottom: 8px; }
+.partner-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 7px; }
+.partner-desc  { font-size: 13px; color: var(--text-tertiary); line-height: 1.6; }
+
+/* ─────────────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .grid-2, .grid-3, .grid-4,
+  .partner-grid, .steps-grid,
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .hero-illustration { display: none; }
+  .nav-tabs { display: none; }
+  .hero-stats-row { flex-direction: column; width: 100%; }
+  .hero-stat-item { border-right: none; border-bottom: 1px solid var(--border-default); }
+  .hero { padding: 48px 0 64px; }
+  .section { padding: 56px 0; }
+  .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+@media (max-width: 600px) {
+  .grid-2, .grid-3, .grid-4,
+  .partner-grid, .steps-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .ticker-wrap, .nav-bar { display: none !important; }
+  .page-wrapper { margin-top: 0 !important; }
+  .page-section { display: block !important; page-break-before: always; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ TICKER ═══════ -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="tickerInner"></div>
+</div>
+
+<!-- ═══════ NAVBAR ═══════ -->
+<nav class="nav-bar">
+  <div class="nav-logo" onclick="showSection('home')">
+    <div class="logo-mark">
+      <svg viewBox="0 0 18 18" fill="none">
+        <rect x="2" y="2" width="6" height="6" rx="1.5" fill="white" opacity="0.9"/>
+        <rect x="10" y="2" width="6" height="6" rx="1.5" fill="white" opacity="0.6"/>
+        <rect x="2" y="10" width="6" height="6" rx="1.5" fill="white" opacity="0.6"/>
+        <rect x="10" y="10" width="6" height="6" rx="1.5" fill="white" opacity="0.9"/>
+      </svg>
+    </div>
+    <div class="logo-text">Trading<span>Box</span></div>
+  </div>
+
+  <ul class="nav-tabs">
+    <li><a href="#" onclick="return showSection('home')"       id="tab-home"      class="active">홈</a></li>
+    <li><a href="#" onclick="return showSection('investor')"   id="tab-investor"  >투자자 제안</a></li>
+    <li><a href="#" onclick="return showSection('financial')"  id="tab-financial" >금융기관 파트너십</a></li>
+    <li><a href="#" onclick="return showSection('hnwi')"       id="tab-hnwi"      >고액자산가</a></li>
+    <li><a href="#" onclick="return showSection('retail')"     id="tab-retail"    >일반 투자자</a></li>
+    <li><a href="#" onclick="return showSection('internal')"   id="tab-internal"  >내부 자료 🔒</a></li>
+  </ul>
+
+  <div class="nav-cta">
+    <button class="btn btn-ghost btn-sm" onclick="showSection('retail')">로그인</button>
+    <button class="btn btn-primary btn-sm" onclick="showSection('retail')">무료 시작</button>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+
+<!-- ══════════════════════════════════════════
+     HOME
+══════════════════════════════════════════ -->
+<section class="page-section active" id="sec-home">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="container" style="position:relative">
+      <div style="max-width:640px">
+        <div class="hero-eyebrow">
+          <span class="live-dot"></span> AI 멀티에셋 자동매매 · 운용 중
+        </div>
+        <h1 class="heading-xl mt-4">
+          시장 전체를<br>
+          <span class="text-blue">하나의 박스</span>에
+        </h1>
+        <p class="body-lg mt-20" style="max-width:520px">
+          TradingBox는 주식·코인·원자재·FX를 동시에 운용하는
+          AI 자동매매 플랫폼입니다. 기관급 알고리즘으로 <strong>청산 위험 Zero</strong>를 목표로 합니다.
+        </p>
+        <div class="flex-center gap-12 mt-32" style="justify-content:flex-start">
+          <button class="btn btn-primary btn-lg" onclick="showSection('retail')">무료로 시작하기</button>
+          <button class="btn btn-outline btn-lg" onclick="showSection('investor')">투자자 제안서</button>
+        </div>
+        <div class="hero-stats-row mt-40">
+          <div class="hero-stat-item">
+            <span class="hero-stat-val text-green" id="stat-return">+23.7%</span>
+            <span class="hero-stat-label">연간 목표 수익률</span>
+          </div>
+          <div class="hero-stat-item">
+            <span class="hero-stat-val">1.82</span>
+            <span class="hero-stat-label">Sharpe Ratio</span>
+          </div>
+          <div class="hero-stat-item">
+            <span class="hero-stat-val">−8.3%</span>
+            <span class="hero-stat-label">최대 낙폭 (MDD)</span>
+          </div>
+          <div class="hero-stat-item">
+            <span class="hero-stat-val text-blue">0회</span>
+            <span class="hero-stat-label">청산 발생</span>
+          </div>
+          <div class="hero-stat-item">
+            <span class="hero-stat-val">5개</span>
+            <span class="hero-stat-label">운용 자산군</span>
+          </div>
+        </div>
+      </div>
+      <!-- Background chart illustration -->
+      <svg class="hero-illustration" viewBox="0 0 480 320" fill="none">
+        <polyline points="0,280 40,260 80,230 120,210 160,170 200,155 240,120 280,130 320,90 360,70 400,45 440,20 480,5"
+          stroke="#3182F6" stroke-width="3" fill="none"/>
+        <polyline points="0,300 60,285 120,270 180,255 240,240 300,220 360,195 420,175 480,155"
+          stroke="#00C471" stroke-width="2" fill="none" opacity="0.6"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 핵심 기술 -->
+  <div class="section section-bg-gray">
+    <div class="container">
+      <div class="label-tag">CORE TECHNOLOGY</div>
+      <h2 class="heading-lg mt-4">3가지 핵심 알고리즘</h2>
+      <p class="body-lg mt-12 mb-40">수익 극대화와 손실 차단이 동시에 작동합니다.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div style="font-size:28px;margin-bottom:14px">🛡️</div>
+          <h3 class="heading-sm mb-8">동적 손절매 엔진</h3>
+          <p class="body-sm">ATR 기반 Trailing Stop-Loss. 시장 변동성에 따라 손절가를 실시간으로 조정하며, 수익이 날수록 스톱가를 끌어올려 이익을 자동 보존합니다.</p>
+          <div class="info-box mt-16">래칫(Ratchet) 메커니즘 — 스톱은 <strong>위로만</strong> 이동합니다.</div>
+        </div>
+        <div class="card">
+          <div style="font-size:28px;margin-bottom:14px">🤖</div>
+          <h3 class="heading-sm mb-8">AI 헤징 시그널</h3>
+          <p class="body-sm">Llama3 LLM이 지정학 뉴스와 미결제약정(OI) Z-Score를 실시간 분석합니다. 위험 감지 시 포지션 50% 자동 축소 또는 역방향 헤지를 실행합니다.</p>
+          <div class="info-box mt-16">3단계 헤지 레벨 · L3 발동 시 <strong>전체 즉시 청산</strong></div>
+        </div>
+        <div class="card">
+          <div style="font-size:28px;margin-bottom:14px">📐</div>
+          <h3 class="heading-sm mb-8">Kelly 자금관리</h3>
+          <p class="body-sm">Full Kelly의 25%만 적용하는 보수적 포지션 사이징. 시장 국면·변동성·포트폴리오 노출 3중 필터로 과도한 레버리지를 수학적으로 차단합니다.</p>
+          <div class="info-box mt-16">단일 포지션 <strong>최대 10%</strong> · 포트폴리오 총 <strong>50%</strong> 상한</div>
+        </div>
+      </div>
+
+      <div class="grid-3 mt-20">
+        <div class="card-gray" style="border-radius:var(--r-lg);padding:24px">
+          <div style="font-size:22px;margin-bottom:10px">⚡</div>
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">1초 주기 비동기 루프</h3>
+          <p class="body-sm">Python asyncio 기반. 주식·코인·원자재를 동시 처리. 주문 체결 지연 &lt;500ms.</p>
+        </div>
+        <div class="card-gray" style="border-radius:var(--r-lg);padding:24px">
+          <div style="font-size:22px;margin-bottom:10px">🔒</div>
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">비수탁 구조</h3>
+          <p class="body-sm">고객 자금 직접 보관 불가. 출금 권한 없는 API Key 연동. 언제든 해제 가능.</p>
+        </div>
+        <div class="card-gray" style="border-radius:var(--r-lg);padding:24px">
+          <div style="font-size:22px;margin-bottom:10px">📊</div>
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">실시간 대시보드</h3>
+          <p class="body-sm">Grafana 시각화 + Telegram 봇 알림. P&L·포지션·리스크 지표 실시간 확인.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 경영진 + 회사 개요 -->
+  <div class="section">
+    <div class="container">
+      <div class="grid-2 gap-48">
+        <div>
+          <div class="label-tag">LEADERSHIP</div>
+          <h2 class="heading-lg mt-4 mb-24">경영진</h2>
+          <div class="flex-col gap-16">
+            <div class="person-card">
+              <div class="avatar avatar-blue">박</div>
+              <div>
+                <div class="person-name">박대석</div>
+                <div class="person-role">대표이사 · CEO</div>
+                <p class="person-desc">멀티에셋 AI 트레이딩 시스템 설계 총괄. 제도권 금융 진출 전략 수립 및 투자유치 리드.</p>
+                <div class="person-contact">
+                  📞 010-5277-2068<br>
+                  📍 경기도 고양시 덕양구 고양시청로 19, 서현빌딩 204호
+                </div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="avatar avatar-orange">문</div>
+              <div>
+                <div class="person-name">문용준</div>
+                <div class="person-role">이사장 · Chairman</div>
+                <p class="person-desc">FULLBOX 대표. 블록체인·핀테크 사업 전략 자문 및 글로벌 파트너십 총괄.</p>
+                <div class="person-contact">🏢 FULLBOX 대표</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="label-tag">ROADMAP</div>
+          <h2 class="heading-lg mt-4 mb-28">로드맵</h2>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot done"></div>
+              <div class="tl-date">2026 Q1 — 완료</div>
+              <div class="tl-title">MVP 개발 완성</div>
+              <div class="tl-desc">멀티에셋 봇 코어 엔진, 리스크 관리 모듈, Mock 브로커 구축 완료</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot current"></div>
+              <div class="tl-date">2026 Q2 — 진행 중</div>
+              <div class="tl-title">페이퍼 트레이딩 검증</div>
+              <div class="tl-desc">Sharpe ≥ 1.5, 청산 0회, MDD ≤ -15% 목표치 검증 중</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot future"></div>
+              <div class="tl-date gray">2026 Q3</div>
+              <div class="tl-title">회원제 SaaS 런칭</div>
+              <div class="tl-desc">개인투자자 구독 서비스 출시, 목표 가입자 300명</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot future"></div>
+              <div class="tl-date gray">2027</div>
+              <div class="tl-title">고액자산가 위탁운용</div>
+              <div class="tl-desc">AUM 20~50억, 투자일임업 인가 추진</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot future"></div>
+              <div class="tl-date gray">2028~2030</div>
+              <div class="tl-title">사모펀드 → 자산운용사 인가</div>
+              <div class="tl-desc">제도권 금융 완전 진입 + 싱가포르 MAS 라이선스 취득</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     INVESTOR PROPOSAL
+══════════════════════════════════════════ -->
+<section class="page-section" id="sec-investor">
+
+  <div class="section section-bg-blue">
+    <div class="container">
+      <div class="chip chip-blue mb-16">INVESTMENT PROPOSAL</div>
+      <h1 class="heading-xl">시리즈 A 투자 제안서</h1>
+      <p class="body-lg mt-16" style="max-width:640px">
+        AI 자동매매 SaaS에서 출발하여 제도권 자산운용사로 성장하는 5단계 로드맵.
+        글로벌 알고리즘 트레이딩 시장 규모는 2030년까지 <strong>$31.5조</strong>에 달합니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <div class="grid-2 gap-48">
+        <div>
+          <div class="label-tag">INVESTMENT STRUCTURE</div>
+          <h2 class="heading-md mt-8 mb-24">투자 구조</h2>
+          <div class="table-wrap">
+            <table class="toss-table">
+              <thead><tr><th>항목</th><th>내용</th></tr></thead>
+              <tbody>
+                <tr><td>투자 형태</td><td class="td-bold">전환사채 (CB) / 보통주</td></tr>
+                <tr><td>모집 금액</td><td class="td-blue">₩100억 원</td></tr>
+                <tr><td>기업가치 (Pre-money)</td><td>₩300억 원</td></tr>
+                <tr><td>지분 희석률</td><td>약 25% (신규 발행 기준)</td></tr>
+                <tr><td>투자자 수익 구조</td><td>배당 + EXIT (IPO 2030 목표)</td></tr>
+                <tr><td>최소 투자 단위</td><td>₩5억 원</td></tr>
+                <tr><td>Lock-up 기간</td><td>24개월</td></tr>
+                <tr><td>M&A 옵션</td><td>60% 지분 취득 조건부 협의 가능</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="info-box mt-20">
+            <strong>직접 문의:</strong> 대표이사 박대석 · 📞 010-5277-2068 · 📍 고양시 덕양구 고양시청로 19, 서현빌딩 204호
+          </div>
+        </div>
+
+        <div>
+          <div class="label-tag">FINANCIAL PROJECTIONS</div>
+          <h2 class="heading-md mt-8 mb-24">수익 전망</h2>
+          <div class="table-wrap">
+            <table class="toss-table">
+              <thead><tr><th>연도</th><th>수익 모델</th><th>예상 매출</th><th>AUM</th></tr></thead>
+              <tbody>
+                <tr><td>2026</td><td>SaaS 구독</td><td>₩2~6억</td><td>—</td></tr>
+                <tr><td>2027</td><td>위탁운용 + SaaS</td><td class="td-green">₩10~30억</td><td>₩50억</td></tr>
+                <tr><td>2028</td><td>사모펀드 + B2B</td><td class="td-green">₩50~150억</td><td>₩500억</td></tr>
+                <tr><td>2030</td><td>자산운용사 + 라이선스</td><td class="td-blue">₩500~1,000억</td><td>₩3,000억</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="info-box green mt-20">
+            <strong>벤치마크:</strong> Renaissance Medallion Fund 연 66%+. TradingBox 초기 목표 연 +20~30%, Sharpe ≥ 1.5.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-bg-gray">
+    <div class="container">
+      <div class="label-tag">USE OF FUNDS</div>
+      <h2 class="heading-md mt-8 mb-28">자금 사용 계획</h2>
+      <div class="grid-4">
+        <div class="card-flat">
+          <div style="font-size:26px;margin-bottom:12px">👨‍💻</div>
+          <div class="chip chip-blue mb-10">40%</div>
+          <h3 class="heading-sm mb-6">기술 개발</h3>
+          <p class="body-sm">AI 엔진 고도화, 실거래 인프라, LLM RAG 파이프라인 구축</p>
+        </div>
+        <div class="card-flat">
+          <div style="font-size:26px;margin-bottom:12px">⚖️</div>
+          <div class="chip chip-purple mb-10">25%</div>
+          <h3 class="heading-sm mb-6">규제·인허가</h3>
+          <p class="body-sm">투자일임업 인가, 법률 검토, 싱가포르 MAS 라이선스 준비</p>
+        </div>
+        <div class="card-flat">
+          <div style="font-size:26px;margin-bottom:12px">📣</div>
+          <div class="chip chip-orange mb-10">20%</div>
+          <h3 class="heading-sm mb-6">영업·마케팅</h3>
+          <p class="body-sm">고액자산가 네트워크 확보, 금융기관 B2B 영업</p>
+        </div>
+        <div class="card-flat">
+          <div style="font-size:26px;margin-bottom:12px">🏢</div>
+          <div class="chip chip-gray mb-10">15%</div>
+          <h3 class="heading-sm mb-6">운영·인프라</h3>
+          <p class="body-sm">AWS 클라우드, 보안 감사, 핵심 운영 인력 채용</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     FINANCIAL INSTITUTION
+══════════════════════════════════════════ -->
+<section class="page-section" id="sec-financial">
+
+  <div class="section section-bg-blue">
+    <div class="container">
+      <div class="chip chip-blue mb-16">FINANCIAL INSTITUTION PARTNERSHIP</div>
+      <h1 class="heading-xl">금융기관 파트너십</h1>
+      <p class="body-lg mt-16" style="max-width:600px">
+        TradingBox 알고리즘 엔진을 증권사·은행·보험사에 B2B로 공급합니다.
+        라이선스, 화이트레이블, 공동 운용 등 다양한 협업 구조를 제안합니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <div class="label-tag">PARTNERSHIP MODELS</div>
+      <h2 class="heading-md mt-8 mb-28">협력 모델</h2>
+      <div class="partner-grid">
+        <div class="partner-card">
+          <div class="partner-num">MODEL 01</div>
+          <div class="partner-title">알고리즘 라이선스</div>
+          <p class="partner-desc">TradingBox 알고리즘을 금융기관 자체 시스템에 탑재. 연간 라이선스 비용. 소스코드 에스크로 보관.</p>
+        </div>
+        <div class="partner-card">
+          <div class="partner-num">MODEL 02</div>
+          <div class="partner-title">화이트레이블 서비스</div>
+          <p class="partner-desc">금융기관 브랜드로 AI 자동매매 서비스 출시. 기술·운영은 TradingBox 담당. 수익 공유 방식.</p>
+        </div>
+        <div class="partner-card">
+          <div class="partner-num">MODEL 03</div>
+          <div class="partner-title">공동 운용 펀드</div>
+          <p class="partner-desc">금융기관이 자본을 제공하고 TradingBox가 알고리즘 운용. 성과보수 20% + 운용보수 1.5%.</p>
+        </div>
+        <div class="partner-card">
+          <div class="partner-num">MODEL 04</div>
+          <div class="partner-title">API 연동 서비스</div>
+          <p class="partner-desc">기존 HTS/MTS에 TradingBox 시그널 API 연동. 구독료 기반 B2B SaaS 모델.</p>
+        </div>
+        <div class="partner-card">
+          <div class="partner-num">MODEL 05</div>
+          <div class="partner-title">리스크 관리 솔루션</div>
+          <p class="partner-desc">ATR 동적 스톱·Kelly 사이징·서킷브레이커 모듈을 금융기관 거래 시스템에 통합.</p>
+        </div>
+        <div class="partner-card">
+          <div class="partner-num">MODEL 06</div>
+          <div class="partner-title">싱가포르 공동 진출</div>
+          <p class="partner-desc">MAS 라이선스 취득 후 동남아 시장 공동 진출. 한국 금융기관의 글로벌 파트너십.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-bg-gray">
+    <div class="container">
+      <div class="label-tag">COMPLIANCE</div>
+      <h2 class="heading-md mt-8 mb-28">규제 준수 체계</h2>
+      <div class="grid-2">
+        <div class="ci-item"><div class="ci-icon-wrap">📜</div><div><div class="ci-title">자본시장법 준수</div><div class="ci-desc">투자일임업 인가 로드맵 수립 완료. 현재 신호 제공 SaaS 형태로 운영, 무인가 위반 리스크 Zero.</div></div></div>
+        <div class="ci-item"><div class="ci-icon-wrap">🔏</div><div><div class="ci-title">가상자산이용자보호법</div><div class="ci-desc">비수탁 API 방식으로 가상자산사업자 신고 불필요. 이용자 자산 직접 보관 없음.</div></div></div>
+        <div class="ci-item"><div class="ci-icon-wrap">🛡️</div><div><div class="ci-title">개인정보보호법 (PIPA)</div><div class="ci-desc">최소 수집 원칙, 암호화 저장, 위탁 처리 계약 완비.</div></div></div>
+        <div class="ci-item"><div class="ci-icon-wrap">📱</div><div><div class="ci-title">디지털자산기본법 대응</div><div class="ci-desc">신규 법령 시행 전 사업 구조 사전 설계 완료. 법무팀 지속 모니터링 중.</div></div></div>
+        <div class="ci-item"><div class="ci-icon-wrap">🇸🇬</div><div><div class="ci-title">싱가포르 MAS 대응</div><div class="ci-desc">MPI 라이선스 취득 전략 수립. DTSP 신규 규제(2025.06 발효) 반영한 구조 설계 완료.</div></div></div>
+        <div class="ci-item"><div class="ci-icon-wrap">🔍</div><div><div class="ci-title">독립 알고리즘 감사</div><div class="ci-desc">제3자 성과 감사 및 법률 리스크 검토 예정. 투자자·파트너 요청 시 결과 공개.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     HNWI
+══════════════════════════════════════════ -->
+<section class="page-section" id="sec-hnwi">
+
+  <div class="section" style="background:var(--orange-50);border-bottom:1px solid #FFD8A8">
+    <div class="container">
+      <div class="chip chip-orange mb-16">PREMIUM PRIVATE CLIENT</div>
+      <h1 class="heading-xl">고액자산가 프라이빗 서비스</h1>
+      <p class="body-lg mt-16" style="max-width:600px">
+        자산 3억원 이상 고객을 위한 전용 위탁운용 서비스입니다.
+        기관 수준의 AI 알고리즘을 개인 포트폴리오에 맞춤 적용합니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <div class="label-tag">SERVICE TIERS</div>
+      <h2 class="heading-md mt-8 mb-28">서비스 등급</h2>
+      <div class="grid-3">
+        <div class="tier-card">
+          <div class="tier-plan">SILVER</div>
+          <div class="tier-price">운용보수 1.5%<span class="unit"> + 성과보수 15%</span></div>
+          <div class="tier-period">최소 위탁 자산 ₩3억</div>
+          <ul class="tier-features">
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>멀티에셋 자동매매 봇</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>월간 운용 보고서</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>Telegram 실시간 알림</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>연 2회 전략 미팅</li>
+          </ul>
+          <button class="btn btn-outline mt-24" style="width:100%">상담 신청</button>
+        </div>
+        <div class="tier-card featured">
+          <div class="featured-badge">추천</div>
+          <div class="tier-plan">GOLD</div>
+          <div class="tier-price">운용보수 1.2%<span class="unit"> + 성과보수 20%</span></div>
+          <div class="tier-period">최소 위탁 자산 ₩10억</div>
+          <ul class="tier-features">
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>전담 PM 배정</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>주간 운용 보고서</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>맞춤 리스크 한도 설정</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>헤지 전략 별도 운용</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>연 4회 대면 미팅</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>세금 최적화 자문</li>
+          </ul>
+          <button class="btn btn-primary mt-24" style="width:100%">전담 상담 신청</button>
+        </div>
+        <div class="tier-card">
+          <div class="tier-plan">PLATINUM</div>
+          <div class="tier-price">운용보수<span class="unit"> 협의</span></div>
+          <div class="tier-period">최소 위탁 자산 ₩50억</div>
+          <ul class="tier-features">
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>전용 알고리즘 커스터마이징</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>일일 운용 보고서</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>전용 포트폴리오 대시보드</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>싱가포르 계좌 연동 지원</li>
+            <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>IPO 참여 우선권</li>
+          </ul>
+          <button class="btn btn-ghost mt-24" style="width:100%">개별 협의</button>
+        </div>
+      </div>
+
+      <div class="mt-48 grid-2 gap-48">
+        <div>
+          <div class="label-tag">PERFORMANCE TARGETS</div>
+          <h3 class="heading-md mt-8 mb-20">알고리즘 성과 지표</h3>
+          <div class="table-wrap">
+            <table class="toss-table">
+              <thead><tr><th>지표</th><th>목표</th><th>비고</th></tr></thead>
+              <tbody>
+                <tr><td>연간 수익률</td><td class="td-green">+20~30%</td><td>시장 중립 전략</td></tr>
+                <tr><td>Sharpe Ratio</td><td class="td-bold">≥ 1.5</td><td>과거 2년 백테스트</td></tr>
+                <tr><td>최대 낙폭(MDD)</td><td>≤ −15%</td><td>포트폴리오 기준</td></tr>
+                <tr><td>청산 발생</td><td class="td-green">0회</td><td>페이퍼 트레이딩 기간</td></tr>
+                <tr><td>AI 시그널 정확도</td><td>≥ 55%</td><td>방향 예측</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="label-tag">ASSET PROTECTION</div>
+          <h3 class="heading-md mt-8 mb-20">자산 보호 체계</h3>
+          <div class="flex-col gap-12">
+            <div class="ci-item"><div class="ci-icon-wrap">🛡️</div><div><div class="ci-title">ATR 동적 손절매</div><div class="ci-desc">변동성 기반 실시간 스톱 조정. 수익 방향으로 올라가며 이익 자동 보호.</div></div></div>
+            <div class="ci-item"><div class="ci-icon-wrap">📡</div><div><div class="ci-title">AI 뉴스 헤징</div><div class="ci-desc">지정학·매크로 리스크 감지 시 자동 포지션 50% 축소 또는 역방향 헤지 진입.</div></div></div>
+            <div class="ci-item"><div class="ci-icon-wrap">⚡</div><div><div class="ci-title">서킷브레이커</div><div class="ci-desc">일일 손실 3% → 신규 진입 차단. 5% → 전 포지션 즉시 청산. 자동 실행.</div></div></div>
+            <div class="ci-item"><div class="ci-icon-wrap">🔒</div><div><div class="ci-title">비수탁 자산 관리</div><div class="ci-desc">TradingBox가 고객 자산을 직접 보관하지 않습니다. 출금 권한 없는 API Key만 사용.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     RETAIL
+══════════════════════════════════════════ -->
+<section class="page-section" id="sec-retail">
+
+  <div class="section section-bg-blue">
+    <div class="container">
+      <div class="chip chip-green mb-16"><span class="live-dot" style="width:6px;height:6px"></span> 지금 바로 시작</div>
+      <h1 class="heading-xl">누구나 쓸 수 있는 AI 매매 봇</h1>
+      <p class="body-lg mt-16" style="max-width:560px">복잡한 알고리즘 트레이딩을 월 구독료만으로. TradingBox가 24시간 시장을 감시하고 자동으로 거래합니다.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <div class="label-tag">HOW TO START</div>
+      <h2 class="heading-md mt-8 mb-32">4단계로 시작하기</h2>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num-wrap">1</div>
+          <div class="step-title">거래소 계좌 연동</div>
+          <p class="step-desc">Binance 또는 Alpaca 계좌의 API Key를 TradingBox에 등록합니다. 출금 권한은 주지 않아도 됩니다.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num-wrap">2</div>
+          <div class="step-title">전략 & 리스크 설정</div>
+          <p class="step-desc">운용 자산군, 리스크 레벨, 일일 손실 한도를 설정합니다. 기본값으로도 충분합니다.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num-wrap">3</div>
+          <div class="step-title">봇 가동</div>
+          <p class="step-desc">TradingBox가 24시간 시세를 분석하고 자동으로 매매합니다. Telegram 실시간 알림을 받습니다.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num-wrap">4</div>
+          <div class="step-title">대시보드 확인</div>
+          <p class="step-desc">실시간 P&L, 포지션 현황, 거래 이력을 언제든 확인하고 언제든 중단할 수 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-bg-gray">
+    <div class="container">
+      <div class="grid-2 gap-48">
+        <div>
+          <div class="label-tag">SUBSCRIPTION PLANS</div>
+          <h2 class="heading-md mt-8 mb-24">구독 요금제</h2>
+          <div class="flex-col gap-16">
+            <div class="tier-card">
+              <div class="tier-plan">스타터</div>
+              <div class="tier-price">₩29,000 <span class="unit">/ 월</span></div>
+              <ul class="tier-features mt-16">
+                <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>코인 선물 1개 자산</li>
+                <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>RSI+MACD 기본 전략</li>
+                <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>일 1회 리포트 + Telegram 알림</li>
+              </ul>
+              <button class="btn btn-secondary mt-20" style="width:100%">스타터로 시작</button>
+            </div>
+            <div class="tier-card featured">
+              <div class="featured-badge">인기</div>
+              <div class="tier-plan">프로</div>
+              <div class="tier-price">₩79,000 <span class="unit">/ 월</span></div>
+              <ul class="tier-features mt-16">
+                <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>멀티에셋 5개 동시 운용</li>
+                <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>AI 헤징 시그널 포함</li>
+                <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>실시간 대시보드</li>
+                <li><span class="tier-check"><svg viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 5-5" stroke="#00C471" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></span>우선 고객 지원</li>
+              </ul>
+              <button class="btn btn-primary mt-20" style="width:100%">프로로 시작</button>
+            </div>
+          </div>
+          <div class="info-box green mt-16">14일 무료 체험 · 언제든 해지 가능 · 첫 14일 내 환불 보장</div>
+        </div>
+        <div>
+          <div class="label-tag">FAQ</div>
+          <h2 class="heading-md mt-8 mb-24">자주 묻는 질문</h2>
+          <div class="faq-list">
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFaq(this)">내 자산이 안전한가요? <span class="faq-arrow">▼</span></div>
+              <div class="faq-a">TradingBox는 출금 권한이 없는 API Key만 사용합니다. 고객의 자산에 직접 접근하거나 출금할 수 없습니다. 언제든 API Key를 거래소에서 삭제하여 즉시 연동을 해제할 수 있습니다.</div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFaq(this)">손실이 나면 어떻게 되나요? <span class="faq-arrow">▼</span></div>
+              <div class="faq-a">서킷브레이커가 자동으로 작동합니다. 일일 손실이 설정 한도(기본 5%)에 도달하면 모든 포지션이 자동 청산되고 당일 거래가 중단됩니다. ATR 기반 동적 손절매도 항상 활성화되어 단일 포지션 손실을 제한합니다.</div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFaq(this)">어떤 거래소를 지원하나요? <span class="faq-arrow">▼</span></div>
+              <div class="faq-a">현재 Binance(코인 선물), Alpaca(미국 주식)를 지원합니다. OKX, Bybit, 국내 거래소는 로드맵에 포함되어 있으며 순차 추가됩니다.</div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFaq(this)">수익률을 보장하나요? <span class="faq-arrow">▼</span></div>
+              <div class="faq-a">금융 상품의 특성상 수익률을 보장하지 않습니다. 백테스트 및 페이퍼 트레이딩 기반 목표 수익률은 제시되나, 실제 시장 환경에 따라 결과는 달라질 수 있습니다. 원금 손실 가능성을 인지하고 투자하시기 바랍니다.</div>
+            </div>
+            <div class="faq-item">
+              <div class="faq-q" onclick="toggleFaq(this)">언제든 해지할 수 있나요? <span class="faq-arrow">▼</span></div>
+              <div class="faq-a">예, 언제든 서비스를 해지할 수 있습니다. 해지 즉시 모든 자동 거래가 중단됩니다. 첫 14일 내 해지 시 전액 환불해 드립니다.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     INTERNAL
+══════════════════════════════════════════ -->
+<section class="page-section" id="sec-internal">
+
+  <div class="section">
+    <div class="container">
+      <div class="doc-header">
+        <div class="doc-header-left">🔒 내부 회의자료 — 대외비 (Confidential)</div>
+        <div class="doc-header-right">2026-06-10 | 이사회 및 임원진 한정 | Rev. 2.1</div>
+      </div>
+
+      <div class="chip chip-orange mb-16">BOARD MEETING MATERIALS</div>
+      <h1 class="heading-xl">이사회 회의 자료</h1>
+      <p class="body-lg mt-12">2026년 2분기 경영 현황 보고 및 전략 검토 자료입니다.</p>
+
+      <div class="label-tag mt-48">CURRENT KPIs</div>
+      <h2 class="heading-md mt-8 mb-24">핵심 성과 지표</h2>
+      <div class="grid-4">
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--green-500)">+23.7%</div><div class="kpi-label">페이퍼 트레이딩 수익률</div><div class="kpi-sub">2026 YTD (목표 +20%)</div></div>
+        <div class="kpi-card"><div class="kpi-val">1.82</div><div class="kpi-label">Sharpe Ratio</div><div class="kpi-sub">목표 ≥ 1.5 ✓</div></div>
+        <div class="kpi-card"><div class="kpi-val">−8.3%</div><div class="kpi-label">최대 낙폭 (MDD)</div><div class="kpi-sub">목표 ≤ −15% ✓</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--green-500)">0회</div><div class="kpi-label">청산 발생</div><div class="kpi-sub">페이퍼 기간 전체</div></div>
+        <div class="kpi-card"><div class="kpi-val" style="color:var(--orange-500)">₩0</div><div class="kpi-label">현재 투자 유치</div><div class="kpi-sub">Series A 준비 중</div></div>
+        <div class="kpi-card"><div class="kpi-val">14개</div><div class="kpi-label">단위 테스트</div><div class="kpi-sub">14/14 PASS</div></div>
+        <div class="kpi-card"><div class="kpi-val">7개</div><div class="kpi-label">운용 자산군</div><div class="kpi-sub">주식4 · 코인3</div></div>
+        <div class="kpi-card"><div class="kpi-val">8주</div><div class="kpi-label">MVP 개발 기간</div><div class="kpi-sub">예산 $60/월 달성</div></div>
+      </div>
+
+      <div class="grid-2 gap-48 mt-48">
+        <div>
+          <div class="label-tag">MEETING AGENDA</div>
+          <h2 class="heading-md mt-8 mb-24">회의 안건</h2>
+          <div class="flex-col gap-10">
+            <div class="agenda-item"><div class="agenda-num">01</div><div><div class="agenda-title">2026 Q2 운영 현황 보고</div><div class="agenda-desc">페이퍼 트레이딩 성과 리뷰, 기술 개발 완료 현황, 팀 구성 현황 공유.</div><div class="agenda-owner">박대석 대표이사 · 20분</div></div></div>
+            <div class="agenda-item"><div class="agenda-num">02</div><div><div class="agenda-title">Series A 투자 유치 전략</div><div class="agenda-desc">100억원 투자 제안서 최종 검토. VC·엔젤·금융기관 파이프라인 현황. 기업가치 산정 논의.</div><div class="agenda-owner">박대석 대표이사 + 문용준 이사장 · 30분</div></div></div>
+            <div class="agenda-item"><div class="agenda-num">03</div><div><div class="agenda-title">실거래 전환 계획</div><div class="agenda-desc">페이퍼 → 소액 실거래 전환 타임라인. 리스크 한도, 초기 운용 자금 규모. KYC/AML 체계.</div><div class="agenda-owner">기술팀 · 20분</div></div></div>
+            <div class="agenda-item"><div class="agenda-num">04</div><div><div class="agenda-title">규제 대응 현황</div><div class="agenda-desc">자본시장법 투자일임업 인가 준비 일정. 가상자산이용자보호법 컴플라이언스. 법무법인 선임.</div><div class="agenda-owner">문용준 이사장 · 15분</div></div></div>
+            <div class="agenda-item"><div class="agenda-num">05</div><div><div class="agenda-title">싱가포르 법인 설립 검토</div><div class="agenda-desc">MAS MPI 라이선스 요건 업데이트. DTSP 신규 규제(2025.06) 영향 분석. 설립 비용 및 타임라인.</div><div class="agenda-owner">문용준 이사장 + 외부 자문 · 20분</div></div></div>
+            <div class="agenda-item"><div class="agenda-num">06</div><div><div class="agenda-title">Q3 실행 계획 승인</div><div class="agenda-desc">SaaS 런칭 일정, 마케팅 예산, 채용 계획(퀀트 개발자 1명, 백엔드 1명) 최종 승인.</div><div class="agenda-owner">이사회 전원 · 15분</div></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="label-tag">STRATEGIC RISKS</div>
+          <h2 class="heading-md mt-8 mb-24">전략 리스크</h2>
+          <div class="flex-col gap-10">
+            <div class="ci-item" style="border-color:var(--red-50)"><div class="ci-icon-wrap" style="background:var(--red-50)">🔴</div><div><div class="ci-title">규제 리스크 <span class="chip chip-red" style="font-size:10px;padding:2px 7px">High</span></div><div class="ci-desc">디지털자산기본법 세부 시행령 미확정. 투자일임업 인가 지연 가능성. 법무 자문 선임으로 대응.</div></div></div>
+            <div class="ci-item" style="border-color:var(--orange-50)"><div class="ci-icon-wrap" style="background:var(--orange-50)">🟠</div><div><div class="ci-title">시장 리스크 <span class="chip chip-orange" style="font-size:10px;padding:2px 7px">Medium</span></div><div class="ci-desc">2026년 글로벌 금리 불확실성, 코인 규제 강화 가능성. 멀티에셋 분산 + 서킷브레이커로 대응.</div></div></div>
+            <div class="ci-item" style="border-color:var(--orange-50)"><div class="ci-icon-wrap" style="background:var(--orange-50)">🟠</div><div><div class="ci-title">경쟁 리스크 <span class="chip chip-orange" style="font-size:10px;padding:2px 7px">Medium</span></div><div class="ci-desc">국내외 AI 트레이딩 서비스 경쟁 심화. 리스크 관리 차별화 + 제도권 금융 진입 가속화.</div></div></div>
+            <div class="ci-item" style="border-color:var(--green-50)"><div class="ci-icon-wrap" style="background:var(--green-50)">🟡</div><div><div class="ci-title">기술 리스크 <span class="chip chip-green" style="font-size:10px;padding:2px 7px">Low</span></div><div class="ci-desc">거래소 API 변경, 시스템 다운타임. AWS 고가용성 인프라 + 자동 헤지 로직으로 대응.</div></div></div>
+          </div>
+
+          <div class="label-tag mt-32">NEXT ACTIONS</div>
+          <h3 class="heading-sm mt-8 mb-16">실행 과제</h3>
+          <div class="table-wrap">
+            <table class="toss-table">
+              <thead><tr><th>과제</th><th>담당</th><th>기한</th><th>상태</th></tr></thead>
+              <tbody>
+                <tr><td>투자자 PT 자료 완성</td><td>박대석</td><td>07-01</td><td><span class="chip chip-blue" style="font-size:11px">진행 중</span></td></tr>
+                <tr><td>법무법인 선임</td><td>문용준</td><td>07-15</td><td><span class="chip chip-gray" style="font-size:11px">예정</span></td></tr>
+                <tr><td>소액 실거래 테스트</td><td>기술팀</td><td>07-30</td><td><span class="chip chip-gray" style="font-size:11px">예정</span></td></tr>
+                <tr><td>SaaS 베타 가입자 모집</td><td>마케팅</td><td>08-01</td><td><span class="chip chip-gray" style="font-size:11px">예정</span></td></tr>
+                <tr><td>싱가포르 자문사 미팅</td><td>문용준</td><td>08-15</td><td><span class="chip chip-gray" style="font-size:11px">예정</span></td></tr>
+                <tr><td>Series A IR 시작</td><td>박대석</td><td>09-01</td><td><span class="chip chip-gray" style="font-size:11px">예정</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box orange mt-40">
+        <strong>⚠️ 이 문서는 대외비입니다.</strong> 이사회 및 임원진 이외의 인원에게 배포 금지.
+        문의: 대표이사 박대석 · 📞 010-5277-2068 · 📍 경기도 고양시 덕양구 고양시청로 19, 서현빌딩 204호
+      </div>
+    </div>
+  </div>
+
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="name">Trading<span>Box</span></div>
+        <p class="desc">AI 멀티에셋 자동매매 플랫폼. 기관 수준의 퀀트 알고리즘을 모든 투자자에게. 청산 위험 Zero를 목표로 합니다.</p>
+        <div class="info-box mt-20" style="font-size:12px">
+          금융 투자에는 원금 손실 위험이 있습니다. 과거 성과가 미래를 보장하지 않습니다.
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">서비스</div>
+        <ul class="footer-links">
+          <li><a href="#" onclick="return showSection('retail')">일반 투자자</a></li>
+          <li><a href="#" onclick="return showSection('hnwi')">고액자산가</a></li>
+          <li><a href="#" onclick="return showSection('financial')">금융기관 파트너십</a></li>
+          <li><a href="#" onclick="return showSection('investor')">투자자 제안</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">회사</div>
+        <ul class="footer-links">
+          <li><a href="#" onclick="return showSection('home')">회사 소개</a></li>
+          <li><a href="#" onclick="return showSection('internal')">내부 자료</a></li>
+          <li><a href="#">개인정보처리방침</a></li>
+          <li><a href="#">이용약관</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">연락처</div>
+        <div class="footer-contact-detail">
+          <strong style="color:var(--text-primary)">대표이사 박대석</strong><br>
+          📞 010-5277-2068<br>
+          📍 경기도 고양시 덕양구<br>
+          고양시청로 19, 서현빌딩 204호<br><br>
+          <strong style="color:var(--text-primary)">이사장 문용준</strong><br>
+          🏢 FULLBOX 대표
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 TradingBox. All rights reserved.</span>
+      <span>사업자등록번호: 준비 중 | 현재 투자일임업 미인가 (신호 제공 서비스)</span>
+    </div>
+  </div>
+</footer>
+
+</div><!-- end page-wrapper -->
+
+<script>
+/* ─── TICKER DATA ─── */
+const TICKERS = [
+  {sym:'BTC/USDT', p:64821.50, d:2.34, up:false},
+  {sym:'ETH/USDT', p:3412.80,  d:1.87, up:false},
+  {sym:'AAPL',     p:187.42,   d:-0.43,up:true},
+  {sym:'NVDA',     p:923.10,   d:3.21, up:false},
+  {sym:'SPY',      p:523.67,   d:0.82, up:false},
+  {sym:'XAU/USD',  p:2318.40,  d:0.56, up:false},
+  {sym:'WTI',      p:81.34,    d:-1.12,up:true},
+  {sym:'SOL/USDT', p:158.20,   d:4.56, up:false},
+  {sym:'EUR/USD',  p:1.0842,   d:-0.21,up:true},
+  {sym:'QQQ',      p:451.88,   d:1.04, up:false},
+  {sym:'BNB/USDT', p:598.30,   d:0.78, up:false},
+  {sym:'TSLA',     p:175.60,   d:2.10, up:false},
+];
+
+// 한국식: 상승=빨강, 하락=파랑
+function buildTicker() {
+  const el = document.getElementById('tickerInner');
+  let h = '';
+  for (let r = 0; r < 2; r++) {
+    TICKERS.forEach(d => {
+      const cls = d.up ? 'dn' : 'up';
+      const sign = d.d >= 0 ? '+' : '';
+      const fmt = d.p >= 1000 ? d.p.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})
+                : d.p >= 10   ? d.p.toFixed(2)
+                :               d.p.toFixed(4);
+      h += `<span class="ticker-item"><span class="sym">${d.sym}</span><span class="price">${fmt}</span><span class="${cls}">${sign}${d.d.toFixed(2)}%</span></span>`;
+    });
+  }
+  el.innerHTML = h;
+}
+buildTicker();
+
+setInterval(() => {
+  TICKERS.forEach(d => {
+    const delta = d.p * (Math.random() - 0.498) * 0.0012;
+    d.p = Math.max(d.p + delta, 0.001);
+    d.d = (delta / (d.p - delta)) * 100;
+    d.up = d.d < 0; // up=true means price fell (Korean convention: red=up, blue=down)
+  });
+  buildTicker();
+}, 2800);
+
+/* ─── NAVIGATION ─── */
+function showSection(id) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs a').forEach(a => a.classList.remove('active'));
+  const sec = document.getElementById('sec-' + id);
+  const tab = document.getElementById('tab-' + id);
+  if (sec) sec.classList.add('active');
+  if (tab) tab.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  return false;
+}
+
+/* ─── FAQ ─── */
+function toggleFaq(el) {
+  const item = el.closest('.faq-item');
+  const was = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!was) item.classList.add('open');
+}
+</script>
+</body>
+</html>
